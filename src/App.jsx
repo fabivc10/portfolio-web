@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 const sections = [
   { id: 'hero', label: 'Intro' },
@@ -7,7 +7,6 @@ const sections = [
   { id: 'projects', label: 'Projects' },
   { id: 'stack', label: 'Tech Stack' },
 ]
-
 const experiences = [
   {
     title: 'Backend / Cloud Developer',
