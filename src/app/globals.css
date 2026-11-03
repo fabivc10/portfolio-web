@@ -1,0 +1,133 @@
+@import "tailwindcss";
+
+/* ---------- Tokens (tema oscuro único, inspirado en minhpham.design) ---------- */
+:root {
+  color-scheme: dark;
+  --bg: #0d0d0d;
+  --fg: #d1c7b7; /* beige */
+  --muted: #a8a093; /* contraste ≈7:1 sobre bg, legible para lectura larga */
+  --faint: #4a4640;
+  --line: rgba(209, 199, 183, 0.1);
+  --surface: rgba(20, 20, 19, 0.72);
+  --surface-solid: #151514;
+  --accent: #ff5a36; /* naranja */
+  --accent-ink: #0d0d0d;
+  --grid: rgba(209, 199, 183, 0.035);
+  --haze: rgba(40, 36, 32, 0.75);
+
+  /* Leídos por el canvas del fondo (formato "r g b") */
+  --fish-cool: 150 144 132;
+  --fish-warm: 186 164 128;
+  --fish-ink-dark: #0d0d0d;
+  --fish-ink-light: #0d0d0d;
+  --fish-dust: rgba(209, 199, 183, 0.22);
+  --fish-alpha: 0.5;
+
+  --cell: 15px;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-surface-solid: var(--surface-solid);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
+}
+
+html {
+  background: var(--bg);
+  overflow-x: clip;
+}
+
+/* Sin fondo en body: el canvas fijo (-z-10) debe pintarse encima del fondo de html */
+body {
+  color: var(--fg);
+  overflow-x: clip;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ---------- Fondo ASCII ---------- */
+.ocean {
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: var(--cell) var(--cell);
+}
+
+/* La atenuación de la columna central se hace en el canvas (ascii-ocean.tsx → dimAt),
+   así los tiburones que acechan el cursor se ven también sobre el texto. En móvil: global. */
+@media (max-width: 767px) {
+  .ocean canvas {
+    opacity: 0.45;
+  }
+}
+
+.ocean-haze {
+  background:
+    radial-gradient(ellipse 40% 32% at 50% 46%, var(--haze), transparent 70%),
+    linear-gradient(to bottom, transparent 60%, rgba(13, 13, 13, 0.6));
+}
+
+/* ---------- Utilidades ---------- */
+.label {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Texto de lectura: tamaño y contraste pensados para quien revisa el perfil */
+.prose-body {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.display {
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 0.86;
+}
+
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid var(--line);
+}
+
+/* Oculta el cursor del sistema sólo en dispositivos con puntero fino */
+@media (hover: hover) and (pointer: fine) {
+  html.has-cursor,
+  html.has-cursor a,
+  html.has-cursor button {
+    cursor: none;
+  }
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
