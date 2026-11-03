@@ -9,7 +9,7 @@ type Token = { w: string; accent?: boolean };
 // Párrafo principal: cada palabra pasa de apagada a encendida con el scroll.
 const words = (t: string, accent = false): Token[] => t.split(" ").map((w) => ({ w, accent }));
 const statement: Token[] = [
-  ...words("Full stack con enfoque en backend, automatización y cloud. Me importa que los sistemas"),
+  ...words("Me importa que los sistemas"),
   ...words("funcionen en producción:", true),
   ...words("logs, causa raíz y despliegues automatizados, no solo entregar features."),
 ];
@@ -30,7 +30,7 @@ export function About() {
 
   return (
     <section id="about" className="relative scroll-mt-20 overflow-x-clip px-5 py-28 sm:px-8 sm:py-36">
-      <div ref={ref} className="mx-auto max-w-5xl">
+      <div ref={ref} className="scrim mx-auto max-w-5xl">
         <p className="label mb-8">[01] — Sobre mí</p>
         <p className="flex flex-wrap gap-x-[0.26em] font-display text-[clamp(1.7rem,3.8vw,3.2rem)] font-semibold leading-[1.02] tracking-[-0.02em]">
           {statement.map((t, i) => (

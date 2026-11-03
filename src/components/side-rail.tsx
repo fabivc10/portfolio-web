@@ -1,6 +1,6 @@
 import { profile } from "@/data/projects";
 
-/** Rieles fijos laterales (sólo desktop): GitHub a la izquierda, stack a la derecha. */
+/** Riel fijo lateral (sólo desktop): GitHub a la izquierda. */
 export function SideRail() {
   return (
     <>
@@ -17,9 +17,6 @@ export function SideRail() {
           </svg>
         </a>
         <span className="h-16 w-px bg-line" />
-      </div>
-      <div className="fixed bottom-10 right-6 z-40 hidden lg:block">
-        <span className="label block [writing-mode:vertical-rl]">{profile.focus}</span>
       </div>
     </>
   );

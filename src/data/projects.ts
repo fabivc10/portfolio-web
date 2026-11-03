@@ -12,11 +12,19 @@ export type Project = {
   /** Repo público en GitHub. Omitir si el repo es privado. */
   repo?: string;
   /** Capturas 1440×900 dentro de /public/projects. Con más de una se muestra un carrusel. */
-  images: string[];
+  images: Shot[];
+  /** Detalle técnico (cómo funciona por dentro). Solo datos verificables en el código o el CV. */
+  details?: string[];
   /** Contexto para RRHH: trabajo, cliente, freelance… */
   kind?: string;
   /** Enlaces extra (tiendas de apps, etc.). Se muestran debajo de la tarjeta. */
   links?: { label: string; url: string }[];
+};
+
+export type Shot = {
+  src: string;
+  /** Qué muestra la captura: se usa en el texto alternativo y en el control del carrusel */
+  label: string;
 };
 
 export type Job = {
@@ -55,7 +63,7 @@ export const contact = {
 
 /** Cifras rápidas para RRHH (salen del CV). */
 export const highlights = [
-  { value: "3+", label: "Años en producción", detail: "Backend, APIs e integraciones desde 2023" },
+  { value: "3+", label: "Años de experiencia", detail: "Desarrollo backend y full stack desde sep. 2023" },
   { value: "450+", label: "Estaciones de carga", detail: "Operan sobre el servidor OCPP que diseñé" },
   { value: "10+", label: "Países", detail: "Red CREV Link en Latinoamérica" },
   { value: "3", label: "Plataformas", detail: "CREV, Coricar y Grupo Purdy sobre mi arquitectura" },
@@ -67,7 +75,7 @@ export const experience: Job[] = [
     companyUrl: "https://crevlatam.com",
     role: "Desarrollador Backend (contrato)",
     period: "may. 2026 – oct. 2026",
-    mode: "Medio tiempo · Remoto",
+    mode: "Medio tiempo · Remoto · en paralelo a PC Shops",
     points: [
       "Diseñé y desarrollé desde cero una API REST (Node.js/Express) para integrar la facturación de CREV con la Factura Electrónica en Línea (FEL) de la SAT de Guatemala.",
       "Eliminé los pasos manuales del pase a producción automatizando el despliegue con Docker.",
@@ -76,9 +84,9 @@ export const experience: Job[] = [
   },
   {
     company: "PC Shops",
-    role: "Administrador de Bases de Datos y Servidores",
+    role: "Desarrollador Backend y Administrador de Sistemas",
     period: "jul. 2025 – sep. 2026",
-    mode: "Tiempo completo",
+    mode: "Híbrido",
     points: [
       "Automaticé el procesamiento de información recibida por correo con tareas programadas y microservicios en Express.js y Python, con acceso a buzones vía OAuth 2.0.",
       "Administré y mantuve las bases de datos SQL Server y MySQL de la operación diaria.",
@@ -97,7 +105,8 @@ export const experience: Job[] = [
       "Protegí la API con JWT y RBAC, y optimicé MongoDB con índices y paginación.",
       "Monté CI/CD con GitHub Actions y Azure DevOps, imágenes Docker y servicios orquestados con Kubernetes.",
       "Desarrollé el cliente web en React y Next.js: login, cuentas y roles, control remoto de cargadores y KPIs en tiempo real.",
-      "Ejecuté pruebas funcionales y de regresión, y diagnostiqué incidentes reportados por clientes hasta resolverlos.",
+      "Monitoreé la plataforma con Prometheus y Grafana (consumo de recursos y actividad de los cargadores) y analicé logs de los dispositivos IoT para corregir incidentes reportados por clientes.",
+      "Ejecuté pruebas funcionales y de regresión antes de cada liberación.",
     ],
   },
 ];
@@ -109,6 +118,7 @@ export const freelance: Job = {
   period: "sep. 2024 – actualidad",
   points: [
     "Software a la medida para pequeños negocios y docentes: levanto requerimientos, diseño la arquitectura, desarrollo y despliego.",
+    "Billing Sync: herramienta que extrae comprobantes electrónicos del correo vía OAuth 2.0 y los consolida para exportar a Excel.",
     "Grading App: aplicación para docentes (React, Tauri, SQLite) con versionado automático del esquema de base de datos.",
     "Nathaly: sitio de reservas para un negocio de turismo boutique (Angular, Supabase), con precio final al instante.",
   ],
@@ -126,8 +136,8 @@ export const education = {
   certs: "En curso: Microsoft AZ-104 · Cisco CCNA 200-301",
 };
 
-/** Tecnologías que domino a diario; se resaltan dentro de `skills`. El resto: con experiencia. */
-export const coreSkills = ["TypeScript", "JavaScript", "C# / .NET", "Node.js", "Express", "APIs REST", "SQL Server", "PostgreSQL", "Docker", "AWS", "GitHub Actions", "Linux", "React"];
+/** Lo que uso a diario (4–5, defendible en entrevista); se resalta dentro de `skills`. El resto: con experiencia. */
+export const coreSkills = ["Node.js", "TypeScript", "Express", "PostgreSQL", "Docker"];
 
 export const skills: { group: string; items: string[] }[] = [
   { group: "Lenguajes", items: ["TypeScript", "JavaScript", "Python", "C# / .NET", "Java"] },
@@ -139,16 +149,28 @@ export const skills: { group: string; items: string[] }[] = [
   { group: "Seguridad", items: ["JWT", "OAuth 2.0", "RBAC"] },
 ];
 
+/** Ordenados por importancia: los de backend y producción primero, los personales al final. */
 export const projects: Project[] = [
   {
     slug: "crev-link",
     name: "CREV Link",
     summary:
-      "Diseñé la arquitectura del servidor OCPP que conecta 450+ estaciones de carga en 10+ países con las apps web, Android e iOS mediante WebSocket, MQTT y APIs REST.",
+      "Plataforma de carga para vehículos eléctricos: servidor OCPP que conecta 450+ estaciones en 10+ países con las apps web, Android e iOS. Diseñé su arquitectura.",
+    details: [
+      "Mantiene las conexiones WebSocket concurrentes de los cargadores (protocolo OCPP).",
+      "Expone APIs REST, WebSocket y MQTT para los clientes web y móviles, con JWT y RBAC.",
+      "Nació de la ingeniería inversa de una plataforma heredada en Spring Boot; hoy la usan también Coricar y Grupo Purdy.",
+      "Despliegue en Docker y Kubernetes con CI/CD; monitoreo con Prometheus y Grafana.",
+    ],
     tags: ["Node.js", "TypeScript", "Express", "WebSocket", "MQTT", "MongoDB", "Docker", "Kubernetes"],
     kind: "Trabajo · CREV",
     url: "https://link.crev.cr",
-    images: ["/projects/crev-web.png", "/projects/crev-app.png", "/projects/coricar-app.png"],
+    images: [
+      { src: "/projects/crev-arch.png", label: "Arquitectura" },
+      { src: "/projects/crev-web-v2.png", label: "Web app" },
+      { src: "/projects/crev-app-v2.png", label: "App CREV" },
+      { src: "/projects/coricar-app-v2.png", label: "App Coricar" },
+    ],
     links: [
       { label: "CREV · Web app", url: "https://app.crevlatam.com" },
       { label: "CREV · Google Play", url: "https://play.google.com/store/apps/details?id=crev.cr" },
@@ -160,10 +182,17 @@ export const projects: Project[] = [
     slug: "billing-sync",
     name: "Billing Sync",
     summary:
-      "Desarrollé un SaaS que localiza comprobantes fiscales en Gmail y Outlook vía OAuth, extrae XML/PDF y los consolida en un dashboard operativo.",
+      "Herramienta que busca los comprobantes electrónicos en el correo, extrae sus datos fiscales y los consolida en un dashboard exportable a Excel.",
+    details: [
+      "Acceso al buzón de Gmail con OAuth 2.0; las URLs de callback se resuelven por ambiente (producción y previews).",
+      "Búsqueda paginada por rango de fechas, ajustada para no perder comprobantes sin volverse lenta.",
+      "Parser del XML de Hacienda como fuente principal, con el PDF como respaldo.",
+      "Arquitectura por features (model, repository, service) y pruebas con Vitest.",
+    ],
     tags: ["Next.js", "React", "TypeScript", "Zustand", "Tailwind CSS", "Vitest"],
+    kind: "Freelance",
     url: "https://billing-sync.vercel.app",
-    images: ["/projects/billing-sync.png"],
+    images: [{ src: "/projects/billing-sync.png", label: "Pantalla principal" }],
   },
   {
     slug: "web-nathaly",
@@ -171,9 +200,9 @@ export const projects: Project[] = [
     summary:
       "Sitio de reservas para un negocio de turismo boutique en Costa Rica: villas, tours y transporte con precio final al instante, en varios idiomas.",
     tags: ["Angular", "TypeScript", "Supabase", "Tailwind CSS"],
-    kind: "Cliente",
+    kind: "Freelance",
     url: "https://web-nathaly.vercel.app",
-    images: ["/projects/web-nathaly.png"],
+    images: [{ src: "/projects/web-nathaly.png", label: "Pantalla principal" }],
   },
   {
     slug: "grading-app",
@@ -183,8 +212,7 @@ export const projects: Project[] = [
     tags: ["React", "Tauri", "SQLite"],
     kind: "Freelance",
     url: "https://grading-app-bay.vercel.app",
-    repo: "https://github.com/fabivc10/grading-app",
-    images: ["/projects/grading-app.png"],
+    images: [{ src: "/projects/grading-app.png", label: "Pantalla principal" }],
   },
   {
     slug: "certstudy",
@@ -194,6 +222,7 @@ export const projects: Project[] = [
     tags: ["React", "TypeScript", "Vite", "React Router"],
     url: "https://test-app-three-beta-31.vercel.app",
     repo: "https://github.com/fabivc10/test-app",
-    images: ["/projects/certstudy.png"],
+    kind: "Proyecto personal",
+    images: [{ src: "/projects/certstudy-exam.png", label: "Simulacro de examen en curso" }],
   },
 ];

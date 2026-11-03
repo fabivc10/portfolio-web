@@ -15,23 +15,24 @@ export function Contact() {
 
   return (
     <section ref={ref} id="contact" className="relative flex min-h-svh scroll-mt-20 flex-col overflow-x-clip px-5 pt-32 sm:px-8">
-      <motion.div style={{ y, opacity }} className="flex flex-1 flex-col items-center justify-center">
+      <motion.div style={{ y, opacity }} className="scrim flex flex-1 flex-col items-center justify-center">
         <p className="label mb-8">[05] — Contacto</p>
         <Reveal
           className={big}
           radius={110}
           alt={
             <>
-              <span>Con gusto</span>
-              <span>conversamos</span>
+              <span>Envíame</span>
+              <span>tu oferta</span>
             </>
           }
         >
-          <span>Hablemos</span>
-          <span className="text-accent">de tu equipo</span>
+          <span>Disponible</span>
+          <span className="text-accent">para contratar</span>
         </Reveal>
         <p className="mt-10 max-w-xl text-center text-[18px] leading-relaxed text-fg/85">
-          Abierto a oportunidades como desarrollador full stack, con enfoque en backend, automatización y cloud.
+          Busco empleo como desarrollador backend o full stack. Si tu empresa está contratando, escríbeme y te
+          comparto mi CV y disponibilidad.
         </p>
         <div className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row">
           <a

@@ -22,22 +22,33 @@ export function Header() {
   const [active, setActive] = useState("");
   const [open, setOpen] = useState(false);
 
-  // Marca en el nav la sección que cruza la mitad del viewport
+  // Sección activa: la última cuyo inicio ya pasó el 45% de la pantalla (una sola a la vez).
+  // Al llegar al final de la página gana la última (Contacto), aunque no alcance esa línea.
   useEffect(() => {
     const sections = links
       .map((l) => document.querySelector<HTMLElement>(l.href))
       .filter((el): el is HTMLElement => !!el);
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) setActive(`#${e.target.id}`);
-          else if (e.target.id === "about" && e.boundingClientRect.top > 0) setActive("");
-        }
-      },
-      { rootMargin: "-45% 0px -50% 0px" },
-    );
-    sections.forEach((s) => io.observe(s));
-    return () => io.disconnect();
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const line = window.innerHeight * 0.45;
+      const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      let current = "";
+      for (const s of sections) if (s.getBoundingClientRect().top <= line) current = `#${s.id}`;
+      if (atEnd && sections.length) current = `#${sections[sections.length - 1].id}`;
+      setActive(current);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
   // Menú móvil: la página se encoge y se corre a la izquierda (CSS: html.menu-open main)
@@ -90,7 +101,7 @@ export function Header() {
               href={l.href}
               aria-current={on ? "location" : undefined}
               className={`flex items-center gap-2 font-mono text-[12px] uppercase tracking-[0.18em] transition-colors hover:text-fg ${
-                on ? "text-fg" : "text-fg/65"
+                on ? "text-accent" : "text-fg/65"
               }`}
             >
               <span

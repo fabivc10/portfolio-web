@@ -103,6 +103,24 @@ body {
   line-height: 0.86;
 }
 
+/* Velo oscuro detrás de bloques de texto para que la fauna ASCII del fondo no les quite contraste */
+.scrim {
+  position: relative;
+  isolation: isolate;
+}
+.scrim::before {
+  content: "";
+  position: absolute;
+  inset: -3rem -2rem;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--bg) 88%, transparent) 55%,
+    transparent 78%
+  );
+}
+
 .glass {
   background: var(--surface);
   backdrop-filter: blur(14px) saturate(1.1);

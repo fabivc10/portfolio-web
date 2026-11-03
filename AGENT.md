@@ -61,7 +61,7 @@ docs/                 # DESIGN.md y PROJECTS.md
 
 1. **El contenido vive en `src/data/projects.ts`.** No hardcodees textos de proyectos en los componentes.
 2. **No inventes datos.** Stack, clientes, métricas o fechas de un proyecto solo si el usuario los confirmó o salen del sitio/repo.
-3. **No enlaces repos privados.** `billing-sync`, `web-nathaly` y `fiscal-bridge` son privados: solo llevan `url` (deploy), sin `repo`.
+3. **No enlaces código que no se puede publicar.** `billing-sync`, `web-nathaly` y `fiscal-bridge` son privados, y `grading-app` es de una clienta (su código no se muestra): solo llevan `url` (deploy), sin `repo`. La tarjeta dice "Código privado".
 4. **Sin pantalla de carga ni botón "START".** El usuario lo rechazó explícitamente: la página entra directo al contenido.
 5. **Sin input de búsqueda ni "what's on your mind?".** Del video de referencia del fondo solo se toma la animación de fauna ASCII.
 6. **Respeta `prefers-reduced-motion`.** Cada efecto nuevo necesita su versión estática (ver `useReducedMotion` en hero/work).

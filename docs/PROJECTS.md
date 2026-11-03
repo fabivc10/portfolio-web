@@ -27,11 +27,13 @@ La sección "Más en GitHub" se quitó (los repos no tenían descripción); qued
      tags: ["React", "TypeScript"],      // tecnologías reales: van en la tira LED con su ícono
      url: "https://mi-proyecto.vercel.app",
      repo: "https://github.com/fabivc10/mi-proyecto", // solo si es público
-     images: ["/projects/mi-proyecto.png"],           // 1440×900; con varias → carrusel
+     images: [{ src: "/projects/mi-proyecto.png", label: "Pantalla principal" }], // 1440×900; con varias → carrusel
+     kind: "Freelance",                               // Trabajo · Empresa / Cliente / Freelance
+     details: ["Cómo funciona por dentro, en 2–4 puntos verificables"], // opcional
    }
    ```
 
-2. Si el proyecto es una app (sin web pública), arma la captura como composición: una captura por herramienta, como CREV Link (`crev-web.png`, `crev-app.png`, `coricar-app.png`) en carrusel.
+2. Si el proyecto es una app (sin web pública), arma la captura como composición: una captura por herramienta, como CREV Link (`crev-arch.png` + capturas de la web y las apps) en carrusel.
 3. Cada tag necesita su ícono en `src/lib/tech-icons.ts` (Simple Icons); si no hay, se muestra solo el nombre.
 4. La grilla alterna columnas: los índices pares van a la izquierda y los impares a la derecha (con más parallax).
 
