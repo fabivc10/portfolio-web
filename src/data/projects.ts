@@ -1,19 +1,18 @@
 // Fuente única de verdad para el contenido del portfolio.
-// Para agregar un proyecto: añade un objeto a `projects` y (opcional) su captura en /public/projects.
+// Para agregar un proyecto: añade un objeto a `projects` y su captura en /public/projects.
 
 export type Project = {
   slug: string;
   name: string;
   summary: string;
+  /** Tecnologías: se muestran en la tira LED de la tarjeta (íconos en lib/tech-icons.ts) */
   tags: string[];
   /** URL del deploy en producción. Omitir si aún no hay deploy. */
   url?: string;
   /** Repo público en GitHub. Omitir si el repo es privado. */
   repo?: string;
-  /** Ruta dentro de /public. Sin imagen se muestra un placeholder ASCII. */
-  image?: string;
-  status?: "live" | "wip";
-  year: string;
+  /** Capturas 1440×900 dentro de /public/projects. Con más de una se muestra un carrusel. */
+  images: string[];
   /** Contexto para RRHH: trabajo, cliente, freelance… */
   kind?: string;
   /** Enlaces extra (tiendas de apps, etc.). Se muestran debajo de la tarjeta. */
@@ -39,7 +38,6 @@ export const profile = {
   stack: "Node.js · TypeScript · Python",
   location: "Costa Rica",
   github: "https://github.com/fabivc10",
-  githubUser: "fabivc10",
   linkedin: "https://www.linkedin.com/in/favargasc10",
   email: "favargasc10@gmail.com",
   phone: "+506 8585-9875",
@@ -129,14 +127,14 @@ export const education = {
 };
 
 /** Tecnologías que domino a diario; se resaltan dentro de `skills`. El resto: con experiencia. */
-export const coreSkills = ["TypeScript", "C# / .NET", "Node.js", "Express", "APIs REST", "SQL Server", "MySQL", "Docker", "Azure", "Linux", "React"];
+export const coreSkills = ["TypeScript", "JavaScript", "C# / .NET", "Node.js", "Express", "APIs REST", "SQL Server", "PostgreSQL", "Docker", "AWS", "GitHub Actions", "Linux", "React"];
 
 export const skills: { group: string; items: string[] }[] = [
   { group: "Lenguajes", items: ["TypeScript", "JavaScript", "Python", "C# / .NET", "Java"] },
-  { group: "Backend", items: ["Node.js", "Express", "APIs REST", "Microservicios", "WebSocket", "MQTT"] },
-  { group: "Frontend", items: ["React", "Next.js"] },
+  { group: "Backend", items: ["Node.js", "Express", "ASP.NET Core", "Django", "APIs REST", "Microservicios", "WebSocket", "MQTT"] },
+  { group: "Frontend", items: ["React", "Next.js", "Angular", "Tauri"] },
   { group: "Datos", items: ["SQL Server", "MySQL", "PostgreSQL", "MongoDB"] },
-  { group: "Cloud / DevOps", items: ["Docker", "Kubernetes", "Azure", "AWS", "GitHub Actions", "Azure DevOps"] },
+  { group: "Cloud / DevOps", items: ["Docker", "Kubernetes", "Azure", "AWS", "GitHub Actions", "Azure DevOps", "Prometheus", "Grafana"] },
   { group: "Servidores", items: ["Linux", "Windows Server", "Análisis de logs"] },
   { group: "Seguridad", items: ["JWT", "OAuth 2.0", "RBAC"] },
 ];
@@ -147,12 +145,12 @@ export const projects: Project[] = [
     name: "CREV Link",
     summary:
       "Diseñé la arquitectura del servidor OCPP que conecta 450+ estaciones de carga en 10+ países con las apps web, Android e iOS mediante WebSocket, MQTT y APIs REST.",
-    tags: ["Node.js", "TypeScript", "MQTT"],
+    tags: ["Node.js", "TypeScript", "Express", "WebSocket", "MQTT", "MongoDB", "Docker", "Kubernetes"],
     kind: "Trabajo · CREV",
     url: "https://link.crev.cr",
-    status: "live",
-    year: "2023",
+    images: ["/projects/crev-web.png", "/projects/crev-app.png", "/projects/coricar-app.png"],
     links: [
+      { label: "CREV · Web app", url: "https://app.crevlatam.com" },
       { label: "CREV · Google Play", url: "https://play.google.com/store/apps/details?id=crev.cr" },
       { label: "Coricar · Google Play", url: "https://play.google.com/store/apps/details?id=coricar.com" },
       { label: "Coricar · App Store", url: "https://apps.apple.com/cr/app/coricar/id6739074843" },
@@ -163,23 +161,19 @@ export const projects: Project[] = [
     name: "Billing Sync",
     summary:
       "Desarrollé un SaaS que localiza comprobantes fiscales en Gmail y Outlook vía OAuth, extrae XML/PDF y los consolida en un dashboard operativo.",
-    tags: ["SaaS", "OAuth", "Dashboard"],
+    tags: ["Next.js", "React", "TypeScript", "Zustand", "Tailwind CSS", "Vitest"],
     url: "https://billing-sync.vercel.app",
-    image: "/projects/billing-sync.png",
-    status: "live",
-    year: "2026",
+    images: ["/projects/billing-sync.png"],
   },
   {
     slug: "web-nathaly",
     name: "Nathaly",
     summary:
       "Sitio de reservas para un negocio de turismo boutique en Costa Rica: villas, tours y transporte con precio final al instante, en varios idiomas.",
-    tags: ["Angular", "Supabase", "i18n"],
+    tags: ["Angular", "TypeScript", "Supabase", "Tailwind CSS"],
     kind: "Cliente",
     url: "https://web-nathaly.vercel.app",
-    image: "/projects/web-nathaly.png",
-    status: "live",
-    year: "2026",
+    images: ["/projects/web-nathaly.png"],
   },
   {
     slug: "grading-app",
@@ -190,20 +184,16 @@ export const projects: Project[] = [
     kind: "Freelance",
     url: "https://grading-app-bay.vercel.app",
     repo: "https://github.com/fabivc10/grading-app",
-    image: "/projects/grading-app.png",
-    status: "live",
-    year: "2026",
+    images: ["/projects/grading-app.png"],
   },
   {
     slug: "certstudy",
     name: "CertStudy",
     summary:
       "Plataforma de práctica para certificaciones (AWS SAA, Cisco CCNA): exámenes simulados con temporizador y labs guiados.",
-    tags: ["React", "TypeScript"],
+    tags: ["React", "TypeScript", "Vite", "React Router"],
     url: "https://test-app-three-beta-31.vercel.app",
     repo: "https://github.com/fabivc10/test-app",
-    image: "/projects/certstudy.png",
-    status: "live",
-    year: "2026",
+    images: ["/projects/certstudy.png"],
   },
 ];

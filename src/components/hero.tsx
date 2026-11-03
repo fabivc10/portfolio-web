@@ -63,7 +63,7 @@ export function Hero() {
           integraciones y despliegues en producción.
         </motion.p>
         <motion.p {...fade(0.7)} className="mt-3 text-center font-mono text-[13px] tracking-[0.08em] text-muted">
-          {profile.degree} · Incorporado al CPIC · {profile.stack}
+          {profile.degree} · Incorporado al CPIC
         </motion.p>
 
         <motion.div {...fade(0.8)} className="mt-9 flex flex-wrap justify-center gap-3">

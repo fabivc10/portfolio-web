@@ -93,7 +93,7 @@ export function Contact() {
             rel="noreferrer"
             className="rounded-full border border-fg/25 px-5 py-2.5 text-[15px] font-medium transition-colors hover:border-accent hover:text-accent"
           >
-            GitHub ↗
+            Más código en GitHub ↗
           </a>
         </div>
       </motion.div>

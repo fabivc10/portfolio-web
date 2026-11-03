@@ -12,6 +12,11 @@ import { useEffect, useRef } from "react";
  * anillo alrededor del cursor sin amontonarse), guiada por su mejor posición personal
  * y la mejor de sus vecinos. La velocidad del PSO solo da la dirección deseada; el giro
  * y la aceleración siguen limitados para que se mueva como un animal.
+ * El objetivo es el cursor (hover) o, con prioridad, el último clic/toque (señuelo).
+ *
+ * Tortugas y pulpos huyen de cualquier tiburón que entre en su radio de alerta (círculo).
+ * Cada celda acumula un "tono" (detalles en grises: lomo, branquias, placas, manchas) y
+ * se tiñe de naranja donde dos animales se traslapan.
  */
 
 const RAMP = " .:;tX%S8@";
@@ -68,6 +73,11 @@ const SPINE = 24;
 /** Ángulo máximo entre segmentos (rad): evita que el cuerpo se doble en giros cerrados */
 const JOINT_MAX = 0.085;
 
+/** Radio de alerta (px) de cada presa: si un tiburón entra, huye */
+const FLEE = { turtle: 190, octopus: 230 } as const;
+/** Segundos que el señuelo (clic/toque) sigue atrayendo a los tiburones tras soltar */
+const LURE_TIME = 3.5;
+
 // Parámetros del PSO
 const PSO = { inertia: 1.3, c1: 1.4, c2: 1.7, gain: 1.1, vmax: 140, crowd: 280 };
 
@@ -97,29 +107,58 @@ export function AsciiOcean() {
     let acc = new Float32Array(0);
     let wsum = new Float32Array(0);
     let warmBuf = new Uint8Array(0);
+    let toneBuf = new Float32Array(0); // detalle en grises acumulado (−1 oscuro … +1 claro)
+    let ownerBuf = new Int16Array(0); // primer animal que pintó la celda (índice + 1)
+    let curOwner = 0;
     let touched = new Int32Array(0);
     let nTouched = 0;
     const fishes: Fish[] = [];
     let raf = 0;
     let last = performance.now();
-    const pointer = { x: -9999, y: -9999, moved: 0 };
+    /** Mouse en hover */
+    const pointer = { x: -9999, y: -9999 };
+    /** Señuelo: último clic o toque (los tiburones acuden) */
+    const lure = { x: 0, y: 0, t: -99, down: false };
+    /** Objetivo actual de los tiburones (señuelo o cursor) */
+    const goal = { x: 0, y: 0, on: false, lure: false };
+    /** Las presas se dispersan alrededor del clic */
     const scare = { x: 0, y: 0, t: -99 };
 
-    let colors = readColors();
+    function updateGoal(t: number) {
+      if (lure.down || t - lure.t < LURE_TIME) {
+        goal.x = lure.x;
+        goal.y = lure.y;
+        goal.on = goal.lure = true;
+      } else {
+        goal.x = pointer.x;
+        goal.y = pointer.y;
+        goal.on = pointer.x > -9000;
+        goal.lure = false;
+      }
+    }
+
+    const colors = readColors();
 
     function readColors() {
       const cs = getComputedStyle(document.documentElement);
       const get = (n: string) => cs.getPropertyValue(n).trim();
       return {
-        cool: get("--fish-cool") || "70 82 104",
-        warm: get("--fish-warm") || "112 96 72",
-        inkDark: get("--fish-ink-dark") || "#2a2d33",
-        inkLight: get("--fish-ink-light") || "#f2f3f5",
-        dust: get("--fish-dust") || "rgba(80,86,98,0.45)",
-        accent: get("--accent") || "#ff5a36",
+        cool: get("--fish-cool"),
+        warm: get("--fish-warm"),
+        ink: get("--fish-ink"),
+        dust: get("--fish-dust"),
+        accent: get("--accent"),
+        accentRgb: hexRgb(get("--accent")),
         alpha: parseFloat(get("--fish-alpha")) || 1,
       };
     }
+
+    function hexRgb(hex: string): [number, number, number] {
+      const h = hex.replace("#", "");
+      const n = parseInt(h.length === 3 ? h.replace(/./g, "$&$&") : h, 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+    const rgbOf = (s: string) => s.split(/\s+/).map(Number) as [number, number, number];
 
     function spawn(i: number): Fish {
       const kind = KINDS[i % KINDS.length];
@@ -173,6 +212,8 @@ export function AsciiOcean() {
       acc = new Float32Array(cols * rows);
       wsum = new Float32Array(cols * rows);
       warmBuf = new Uint8Array(cols * rows);
+      toneBuf = new Float32Array(cols * rows);
+      ownerBuf = new Int16Array(cols * rows);
       touched = new Int32Array(cols * rows);
       canvas!.width = Math.floor(W * dpr);
       canvas!.height = Math.floor(H * dpr);
@@ -228,13 +269,14 @@ export function AsciiOcean() {
 
     /** Radio de acecho: mayor que el cuerpo, para que la órbita no lo enrolle sobre el cursor */
     function ringOf(f: Fish) {
-      return f.len * C * 0.75 + 110 + (f.seed % 1) * 70;
+      const r = f.len * C * 0.75 + 110 + (f.seed % 1) * 70;
+      return goal.lure ? r * 0.6 : r; // al señuelo se acercan más
     }
 
     /** Función objetivo del acecho (menor es mejor): anillo alrededor del cursor + no amontonarse */
     function fitness(self: Fish, qx: number, qy: number) {
       const ring = ringOf(self);
-      const dr = (Math.hypot(qx - pointer.x, qy - pointer.y) - ring) / ring;
+      const dr = (Math.hypot(qx - goal.x, qy - goal.y) - ring) / ring;
       let crowd = 0;
       for (const o of fishes) {
         if (o === self || o.kind !== "shark") continue;
@@ -247,7 +289,7 @@ export function AsciiOcean() {
     /** Un paso del PSO para todos los tiburones (topología en anillo: cada uno ve a sus 2 vecinos) */
     function psoStep(dt: number) {
       const sharks = fishes.filter((f) => f.kind === "shark");
-      if (pointer.x < -9000 || sharks.length === 0) {
+      if (!goal.on || sharks.length === 0) {
         for (const f of sharks) f.pso.bf = Infinity; // sin cursor: se olvida la memoria
         return;
       }
@@ -292,8 +334,8 @@ export function AsciiOcean() {
         p.vx *= damp;
         p.vy *= damp;
         // El lbest de un vecino está en SU anillo: se suma la atracción a mi propio anillo
-        const dx = pointer.x - f.x;
-        const dy = pointer.y - f.y;
+        const dx = goal.x - f.x;
+        const dy = goal.y - f.y;
         const d = Math.hypot(dx, dy) || 1;
         const ring = ringOf(f);
         const off = (d - ring) / ring;
@@ -351,9 +393,9 @@ export function AsciiOcean() {
       }
 
       // 4) Cursor: cada especie reacciona distinto
-      const hasPointer = pointer.x > -9000;
-      const dx = f.x - pointer.x;
-      const dy = f.y - pointer.y;
+      const hasPointer = goal.on;
+      const dx = f.x - goal.x;
+      const dy = f.y - goal.y;
       const d = Math.hypot(dx, dy) || 1;
       let stalking = false;
       if (hasPointer && f.kind === "shark" && d < Math.max(W, H)) {
@@ -370,7 +412,7 @@ export function AsciiOcean() {
         ax += (-dy / d) * p.side * 1.1 * near;
         ay += (dx / d) * p.side * 1.1 * near;
         stalking = true;
-      } else if (hasPointer && f.kind === "octopus" && d < 210) {
+      } else if (hasPointer && !goal.lure && f.kind === "octopus" && d < 210) {
         // El pulpo se aleja con un chorro
         ax += (dx / d) * 3;
         ay += (dy / d) * 3;
@@ -378,17 +420,58 @@ export function AsciiOcean() {
           f.burst = 1;
           f.nextBurst = 1.6;
         }
-      } else if (hasPointer && f.kind === "turtle" && d < 130) {
+      } else if (hasPointer && !goal.lure && f.kind === "turtle" && d < 130) {
         // La tortuga apenas se aparta
         ax += (dx / d) * 0.8;
         ay += (dy / d) * 0.8;
       }
+      // 4b) Presas: huyen de los tiburones que entran en su radio de alerta (círculo)
+      if (f.kind !== "shark") {
+        const R = FLEE[f.kind];
+        let fx = 0;
+        let fy = 0;
+        for (const o of fishes) {
+          if (o.kind !== "shark") continue;
+          // Distancia al punto más cercano del cuerpo (cabeza, tronco, cola)
+          let best = Infinity;
+          let bx = 0;
+          let by = 0;
+          for (let i = 0; i <= SPINE; i += 6) {
+            const qx = f.x - o.spine[i * 2];
+            const qy = f.y - o.spine[i * 2 + 1];
+            const qd = qx * qx + qy * qy;
+            if (qd < best) {
+              best = qd;
+              bx = qx;
+              by = qy;
+            }
+          }
+          const sd = Math.sqrt(best) || 1;
+          if (sd < R) {
+            const k = 1 - sd / R;
+            fx += (bx / sd) * k;
+            fy += (by / sd) * k;
+          }
+        }
+        const fk = Math.hypot(fx, fy);
+        if (fk > 0) {
+          ax += fx * 4;
+          ay += fy * 4;
+          f.startle = Math.max(f.startle, Math.min(1, fk) * 0.8);
+          f.heading = Math.atan2(fy, fx);
+          if (f.kind === "octopus" && f.burst < 0.3) {
+            f.burst = 1; // chorro de escape
+            f.nextBurst = 1.4;
+          }
+        }
+      }
+
       // Mientras acecha, la intención sigue al cuerpo: al soltar el cursor no da un giro brusco
       f.hunting = stalking;
       if (stalking) f.heading += angleDiff(f.angle, f.heading) * Math.min(1, dt * 2);
 
-      // 5) Clic reciente: se dispersan alejándose del punto
-      if (t - scare.t < 1.2) {
+      // 5) Clic reciente: las presas se dispersan (los tiburones, en cambio, acuden)
+      if (f.kind !== "shark" && t - scare.t < 1.2) {
         const sx = f.x - scare.x;
         const sy = f.y - scare.y;
         const sd = Math.hypot(sx, sy) || 1;
@@ -465,7 +548,7 @@ export function AsciiOcean() {
 
     // Reparte un punto de muestra entre las 4 celdas vecinas (bilineal): al moverse, la
     // intensidad pasa gradualmente de una celda a otra en vez de saltar de golpe.
-    function splat(px: number, py: number, v: number, flags: number) {
+    function splat(px: number, py: number, v: number, flags: number, tone = 0) {
       const fx = px / C - 0.5;
       const fy = py / C - 0.5;
       const x0 = Math.floor(fx);
@@ -485,12 +568,18 @@ export function AsciiOcean() {
           if (wsum[k] === 0) touched[nTouched++] = k;
           acc[k] += v * w;
           wsum[k] += w;
+          toneBuf[k] += tone * w;
+          if (curOwner) {
+            // Bit 4: dos animales distintos pintan la misma celda (traslape)
+            if (ownerBuf[k] === 0) ownerBuf[k] = curOwner;
+            else if (ownerBuf[k] !== curOwner) flags |= 4;
+          }
           warmBuf[k] |= flags;
         }
       }
     }
 
-    /** Bits por celda: 1 = color cálido, 2 = tiburón acechando */
+    /** Bits por celda: 1 = color cálido, 2 = tiburón acechando, 4 = traslape */
     const flagsOf = (f: Fish) => (f.warm ? 1 : 0) | (f.hunting ? 2 : 0);
 
     /**
@@ -504,11 +593,13 @@ export function AsciiOcean() {
       return hunting ? Math.max(k, 0.85) : k;
     }
 
-    function rasterize(f: Fish) {
+    function rasterize(f: Fish, i: number) {
+      curOwner = i + 1;
       if (f.kind === "turtle") rasterTurtle(f);
       else if (f.kind === "octopus") rasterOctopus(f);
       else rasterShark(f);
-      // Estela: nube suave de puntos
+      // Estela: nube suave de puntos (no cuenta como traslape)
+      curOwner = 0;
       for (const p of f.trail) splat(p.x, p.y, 0.5 * p.life, flagsOf(f));
     }
 
@@ -516,8 +607,8 @@ export function AsciiOcean() {
     function local(f: Fish) {
       const dirX = Math.cos(f.angle);
       const dirY = Math.sin(f.angle);
-      return (u: number, w: number, v: number) =>
-        splat(f.x + (dirX * u - dirY * w) * C, f.y + (dirY * u + dirX * w) * C, v, flagsOf(f));
+      return (u: number, w: number, v: number, tone = 0) =>
+        splat(f.x + (dirX * u - dirY * w) * C, f.y + (dirY * u + dirX * w) * C, v, flagsOf(f), tone);
     }
 
     function rasterTurtle(f: Fish) {
@@ -530,22 +621,25 @@ export function AsciiOcean() {
           const q = (u / a) ** 2 + (w / b) ** 2;
           if (q > 1) continue;
           const plates = Math.cos(u * 1.5) * Math.cos(w * 1.5);
-          put(u, w, q > 0.78 ? 0.42 : 0.5 + 0.3 * (1 - q) + 0.14 * plates);
+          // Juntas entre escudos oscuras, centro de cada escudo claro, borde del caparazón oscuro
+          const seam = Math.abs(plates) < 0.18 ? -0.8 : plates * 0.5;
+          put(u, w, q > 0.78 ? 0.42 : 0.5 + 0.3 * (1 - q) + 0.14 * plates, q > 0.78 ? -0.6 : seam);
         }
       }
       // Cabeza (se balancea un poco con la brazada)
       const rH = f.len * 0.13;
       const hu = a + rH * 0.9 + Math.sin(f.phase) * 0.15;
       for (let u = -rH; u <= rH; u += 0.5)
-        for (let w = -rH; w <= rH; w += 0.5) if (u * u + w * w <= rH * rH) put(hu + u, w, 0.62);
-      // Aletas: delanteras largas que reman, traseras cortas
-      // Aletas en forma de remo: más anchas al medio y curvadas hacia atrás
+        for (let w = -rH; w <= rH; w += 0.5) if (u * u + w * w <= rH * rH) put(hu + u, w, 0.62, 0.5);
+      // Ojos
+      for (const side of [-1, 1]) put(hu + rH * 0.35, side * rH * 0.6, 0.7, -1);
+      // Aletas en forma de remo (más anchas al medio, curvadas hacia atrás): delanteras largas, traseras cortas
       const flipper = (rootU: number, rootW: number, ang: number, len: number, width: number, side: number) => {
         for (let s = 0; s <= 1; s += 0.4 / len) {
           const cu = rootU + Math.cos(ang) * s * len - s * s * len * 0.35;
           const cw = rootW + Math.sin(ang) * side * s * len;
           const hw = width * (0.35 + Math.sin(s * Math.PI) * 0.65) * (1 - s * 0.4);
-          for (let o = -hw; o <= hw; o += 0.5) put(cu + o, cw, 0.62 - s * 0.18);
+          for (let o = -hw; o <= hw; o += 0.5) put(cu + o, cw, 0.62 - s * 0.18, 0.35 * Math.sin(o * 3 + s * 7));
         }
       };
       for (const side of [-1, 1]) {
@@ -568,11 +662,11 @@ export function AsciiOcean() {
           const q = (u / (a * (u > 0 ? stretch : 1))) ** 2 + (w / (R / Math.sqrt(stretch))) ** 2;
           if (q > 1) continue;
           const spots = Math.cos(u * 2.1 + 1) * Math.cos(w * 2.3);
-          put(u, w, 0.55 + 0.3 * (1 - q) + 0.1 * spots);
+          put(u, w, 0.55 + 0.3 * (1 - q) + 0.1 * spots, spots > 0.55 ? -0.8 : 0.4 * (1 - q) - 0.2);
         }
       }
       // Ojos
-      for (const side of [-1, 1]) put(-a * 0.35, side * R * 0.75, 0.95);
+      for (const side of [-1, 1]) put(-a * 0.35, side * R * 0.75, 0.95, -1);
       // Tentáculos: se cierran al impulsarse y se abren al planear
       const kappa = f.omega / Math.max(f.speed, 1);
       const open = 0.15 + 0.85 * (1 - Math.min(1, f.burst * 1.4));
@@ -586,7 +680,9 @@ export function AsciiOcean() {
           const bend = Math.max(-0.3, Math.min(0.3, (kappa * (s * T * C) ** 2) / (2 * T * C))) * T;
           const cw = rootW * (1 + s * open * 4) + wave + bend;
           const hw = 0.55 * (1 - s) + 0.3;
-          for (let o = -hw; o <= hw; o += 0.5) put(cu, cw + o, 0.75 - s * 0.4);
+          // Ventosas: puntos claros alternados a lo largo del brazo
+          const sucker = Math.sin(s * T * 3.2) > 0.6 ? 0.7 : -0.25;
+          for (let o = -hw; o <= hw; o += 0.5) put(cu, cw + o, 0.75 - s * 0.4, sucker);
         }
       }
     }
@@ -608,7 +704,7 @@ export function AsciiOcean() {
     function rasterShark(f: Fish) {
       const sp = f.spine;
       const L = f.len * C;
-      const put = (px: number, py: number, v: number) => splat(px, py, v, flagsOf(f));
+      const put = (px: number, py: number, v: number, tone = 0) => splat(px, py, v, flagsOf(f), tone);
       const steps = Math.ceil(f.len * 2.2);
       const smooth = (e0: number, e1: number, x: number) => {
         const k = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
@@ -652,7 +748,12 @@ export function AsciiOcean() {
           // Aleta dorsal vista desde arriba: cresta más clara en el centro del tronco
           const dorsal = s > 0.3 && s < 0.46 && edge < 0.3 ? 0.2 : 0;
           const v = (1 - edge * 0.6 + dorsal) * (1 - s * 0.25);
-          put(cx + nx * o * C, cy + ny * o * C, v);
+          // Lomo oscuro, flancos más claros; ojos y branquias como marcas oscuras
+          let tone = edge < 0.35 ? -0.55 : edge > 0.7 ? 0.45 : 0;
+          if (s > 0.07 && s < 0.1 && edge > 0.55) tone = -1; // ojos
+          if (s > 0.18 && s < 0.26 && edge > 0.55 && Math.sin(s * 160) > 0.2) tone = -0.9; // branquias
+          if (dorsal) tone = -0.9; // aleta dorsal
+          put(cx + nx * o * C, cy + ny * o * C, v, tone);
         }
 
         // Pectorales: rígidas, triangulares y barridas hacia atrás (no aletean)
@@ -662,7 +763,7 @@ export function AsciiOcean() {
           for (const side of [-1, 1]) {
             for (let o = hw; o < hw + span; o += 0.5) {
               const back = (o - hw) * 1.1; // barrido hacia atrás
-              put(cx + nx * o * side * C - p.tx * back * C, cy + ny * o * side * C - p.ty * back * C, 0.45);
+              put(cx + nx * o * side * C - p.tx * back * C, cy + ny * o * side * C - p.ty * back * C, 0.45, o - hw > span * 0.6 ? -0.6 : 0.2);
             }
           }
         }
@@ -687,11 +788,13 @@ export function AsciiOcean() {
     function draw(t: number) {
       ctx!.clearRect(0, 0, W, H);
       nTouched = 0;
-      for (const f of fishes) rasterize(f);
+      fishes.forEach(rasterize);
 
       ctx!.font = `500 ${Math.round(C * 0.78)}px ui-monospace, "Geist Mono", monospace`;
       ctx!.textAlign = "center";
       ctx!.textBaseline = "middle";
+      const coolRgb = rgbOf(colors.cool);
+      const warmRgb = rgbOf(colors.warm);
       // Destellos naranjas: cambian cada ~2 s, no cada cuadro
       const sparkle = Math.floor(t * 0.5);
 
@@ -701,9 +804,13 @@ export function AsciiOcean() {
         const base = acc[k] / wsum[k];
         const warm = (warmBuf[k] & 1) === 1;
         const hunting = (warmBuf[k] & 2) === 2;
+        const overlap = (warmBuf[k] & 4) === 4;
+        const tone = Math.max(-1, Math.min(1, toneBuf[k] / wsum[k]));
         acc[k] = 0;
         wsum[k] = 0;
         warmBuf[k] = 0;
+        toneBuf[k] = 0;
+        ownerBuf[k] = 0;
 
         // Intensidad continua: el borde se desvanece en vez de encenderse/apagarse
         const v = base * cover;
@@ -725,14 +832,28 @@ export function AsciiOcean() {
         }
 
         const fade = Math.min(1, (v - 0.3) / 0.12);
-        const rgb = warm ? colors.warm : colors.cool;
-        ctx!.fillStyle = `rgb(${rgb} / ${((0.18 + v * 0.72) * colors.alpha * fade * dim).toFixed(3)})`;
+        // Variación de grises: aclara u oscurece la celda según el detalle del animal
+        let [r, g0, b] = warm ? warmRgb : coolRgb;
+        const shade = 1 + tone * 0.38;
+        r *= shade;
+        g0 *= shade;
+        b *= shade;
+        let alpha = 0.18 + v * 0.72;
+        if (overlap) {
+          // Traslape entre animales: se tiñe de naranja
+          const [ar, ag, ab] = colors.accentRgb;
+          r = r * 0.35 + ar * 0.65;
+          g0 = g0 * 0.35 + ag * 0.65;
+          b = b * 0.35 + ab * 0.65;
+          alpha = Math.min(1, alpha + 0.2);
+        }
+        ctx!.fillStyle = `rgb(${r | 0} ${g0 | 0} ${b | 0} / ${(alpha * colors.alpha * fade * dim).toFixed(3)})`;
         ctx!.fillRect(x + 1, y + 1, C - 2, C - 2);
 
         const g = Math.min(1, v + (rs - 0.5) * 0.08);
         const ch = RAMP[Math.min(RAMP.length - 1, Math.max(1, Math.floor(g * RAMP.length)))];
-        if (v > 0.5 && hash(cx, cy, sparkle) < 0.008) ctx!.fillStyle = colors.accent;
-        else ctx!.fillStyle = v > 0.6 ? colors.inkLight : colors.inkDark;
+        if (overlap ? hash(cx, cy, sparkle) < 0.45 : v > 0.5 && hash(cx, cy, sparkle) < 0.008) ctx!.fillStyle = colors.accent;
+        else ctx!.fillStyle = colors.ink;
         ctx!.globalAlpha = fade * dim;
         ctx!.fillText(ch, x + C / 2, y + C / 2 + 0.5);
         ctx!.globalAlpha = 1;
@@ -743,6 +864,7 @@ export function AsciiOcean() {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const t = now / 1000;
+      updateGoal(t);
       psoStep(dt);
       for (const f of fishes) step(f, dt, t);
       draw(t);
@@ -760,18 +882,28 @@ export function AsciiOcean() {
     }
 
     const onMove = (e: PointerEvent) => {
-      pointer.x = e.clientX;
-      pointer.y = e.clientY;
-      pointer.moved = performance.now() / 1000;
+      if (e.pointerType === "mouse") {
+        pointer.x = e.clientX;
+        pointer.y = e.clientY;
+      }
+      // Arrastrando el dedo (o con el botón apretado): el señuelo lo sigue
+      if (lure.down) {
+        lure.x = e.clientX;
+        lure.y = e.clientY;
+      }
     };
-    // Un clic/toque asusta a los peces cercanos y se dispersan
+    // Clic/toque: los tiburones acuden al punto; tortugas y pulpos se dispersan
     const onDown = (e: PointerEvent) => {
-      scare.x = e.clientX;
-      scare.y = e.clientY;
-      scare.t = performance.now() / 1000;
+      const now = performance.now() / 1000;
+      lure.x = scare.x = e.clientX;
+      lure.y = scare.y = e.clientY;
+      lure.down = true;
+      lure.t = scare.t = now;
     };
-    const onUp = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") pointer.x = pointer.y = -9999;
+    const onUp = () => {
+      if (!lure.down) return;
+      lure.down = false;
+      lure.t = performance.now() / 1000;
     };
     const onLeave = () => {
       pointer.x = pointer.y = -9999;
@@ -783,11 +915,6 @@ export function AsciiOcean() {
       resize();
       if (reduce.matches) draw(0);
     };
-    const scheme = window.matchMedia("(prefers-color-scheme: dark)");
-    const onScheme = () => {
-      colors = readColors();
-      if (reduce.matches) draw(0);
-    };
 
     resize();
     start();
@@ -795,10 +922,10 @@ export function AsciiOcean() {
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("pointerdown", onDown, { passive: true });
     window.addEventListener("pointerup", onUp, { passive: true });
+    window.addEventListener("pointercancel", onUp, { passive: true });
     document.addEventListener("pointerleave", onLeave);
     document.addEventListener("mouseout", onOut);
     reduce.addEventListener("change", start);
-    scheme.addEventListener("change", onScheme);
 
     return () => {
       cancelAnimationFrame(raf);
@@ -806,10 +933,10 @@ export function AsciiOcean() {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
       document.removeEventListener("pointerleave", onLeave);
       document.removeEventListener("mouseout", onOut);
       reduce.removeEventListener("change", start);
-      scheme.removeEventListener("change", onScheme);
     };
   }, []);
 

@@ -46,7 +46,7 @@ export function Experience() {
           Trayectoria<span className="text-accent">.</span>
         </h2>
 
-        <ol className="border-b border-line">
+        <ol className="overflow-hidden rounded-sm border-x border-b border-line">
           {experience.map((job, i) => (
             <motion.li
               key={`${job.company}-${job.period}`}
@@ -54,14 +54,14 @@ export function Experience() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.9, delay: (i % 2) * 0.06, ease }}
-              className="grid gap-4 border-t border-line bg-bg/70 py-9 backdrop-blur-[2px] md:grid-cols-[260px_1fr] md:gap-10"
+              className="grid gap-4 border-t border-line bg-bg/70 px-5 py-9 backdrop-blur-[2px] sm:px-6 md:grid-cols-[260px_1fr] md:gap-10"
             >
               <JobRow job={job} />
             </motion.li>
           ))}
         </ol>
 
-        <div className="mt-6 grid gap-4 rounded-sm border border-dashed border-fg/20 bg-bg/70 p-6 md:grid-cols-[260px_1fr] md:gap-10">
+        <div className="mt-6 grid gap-4 rounded-sm border border-dashed border-fg/20 bg-bg/70 px-5 py-6 sm:p-6 md:grid-cols-[260px_1fr] md:gap-10">
           <JobRow job={freelance} />
         </div>
 

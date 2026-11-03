@@ -44,10 +44,15 @@ src/
     reveal.tsx        # "lente" naranja que revela un texto alternativo
     cursor.tsx        # cursor personalizado (solo puntero fino)
     smooth-scroll.tsx # Lenis
-    header.tsx, side-rail.tsx
+    header.tsx        # nav flotante (desktop) y menú lateral "Menú +" (móvil: la página se encoge a la izquierda)
+    side-rail.tsx
     hero.tsx, about.tsx, experience.tsx, services.tsx, work.tsx, contact.tsx
+    carousel.tsx      # carrusel de capturas con timer y botones < > (proyectos con varias imágenes)
+    led-ticker.tsx    # tira LED tipo valla de estadio con las tecnologías de cada proyecto
   data/projects.ts    # TODO el contenido editable (perfil, contacto, cifras, experiencia, skills, proyectos)
   lib/use-media.ts    # hook de media query (useSyncExternalStore)
+  lib/scroll.ts       # puente con Lenis: bloquear scroll y navegar a #secciones
+  lib/tech-icons.ts   # íconos (simple-icons) por nombre de tecnología
 public/projects/      # capturas de los proyectos (1440×900)
 docs/                 # DESIGN.md y PROJECTS.md
 ```
@@ -63,7 +68,8 @@ docs/                 # DESIGN.md y PROJECTS.md
 7. **Efectos de cursor solo con `(hover: hover) and (pointer: fine)`.** En táctil, `Reveal` muestra el círculo al tocar y lo cierra solo (no deambula: tapaba el titular en móvil).
 8. **Estado de UI con media queries:** usa `useMedia()` y no `setState` dentro de `useEffect` (el lint de React lo marca como error).
 9. **Tema oscuro único.** Colores solo vía tokens CSS (`bg`, `fg`, `muted`, `faint`, `line`, `accent`…); no uses hex sueltos en componentes.
-10. El canvas del fondo está en `-z-10`: **no le pongas `background` a `body`**, o lo tapa. El fondo va en `html`.
+10. **Fauna:** los tiburones acechan el cursor y acuden al último clic/toque; tortugas y pulpos huyen de los tiburones dentro de un radio circular (`FLEE`). Donde dos animales se traslapan la celda se tiñe de naranja.
+11. El canvas del fondo está en `-z-10`: **no le pongas `background` a `body`**, o lo tapa. El fondo va en `html`.
 
 ## Idioma
 

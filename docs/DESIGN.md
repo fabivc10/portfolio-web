@@ -42,7 +42,7 @@ Fuentes: **League Spartan** (display), **Geist** (texto), **Geist Mono** (etique
 | Relleno izquierda→derecha | Lista "Lo que hago" | `services.tsx` |
 | Título que se desliza + parallax por columna | Proyectos | `work.tsx` |
 | Escalonado al entrar | Experiencia, cifras y tarjetas | `experience.tsx`, `about.tsx`, `work.tsx` |
-| Estado activo del nav | Raya naranja junto a la sección visible | `header.tsx` |
+| Estado activo del nav | Raya naranja junto a la sección visible (desktop y menú móvil) | `header.tsx` |
 
 Todos los efectos se apagan o quedan estáticos con `prefers-reduced-motion: reduce`.
 El cursor y el lente interactivo solo se activan con mouse o trackpad. En pantallas

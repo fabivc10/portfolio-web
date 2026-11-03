@@ -18,8 +18,7 @@
   /* Leídos por el canvas del fondo (formato "r g b") */
   --fish-cool: 150 144 132;
   --fish-warm: 186 164 128;
-  --fish-ink-dark: #0d0d0d;
-  --fish-ink-light: #0d0d0d;
+  --fish-ink: #0d0d0d;
   --fish-dust: rgba(209, 199, 183, 0.22);
   --fish-alpha: 0.5;
 
@@ -117,6 +116,96 @@ body {
   html.has-cursor a,
   html.has-cursor button {
     cursor: none;
+  }
+}
+
+/* ---------- Tira LED de tecnologías (led-ticker.tsx) ---------- */
+.led-track {
+  animation: led-scroll 40s linear infinite;
+}
+.led-board:hover .led-track {
+  animation-play-state: paused;
+}
+@keyframes led-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+/* Brillo del LED */
+.led-panel {
+  text-shadow: 0 0 6px currentColor;
+}
+/* Trama de píxeles + reflejo superior, por encima de los paneles */
+.led-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, transparent 45%, rgba(0, 0, 0, 0.55) 75%) 0 0 / 3px 3px,
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent 40%, rgba(0, 0, 0, 0.25));
+}
+@media (prefers-reduced-motion: reduce) {
+  .led-track {
+    animation: none;
+  }
+}
+
+/* ---------- Menú móvil ----------
+   La página se encoge y se corre a la izquierda; el panel entra desde la derecha. */
+html.scroll-locked {
+  overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  main {
+    transform-origin: 50% var(--menu-oy, 50vh);
+    transition:
+      transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+      filter 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* Recorte de "tarjeta" al alto de la pantalla. Solo mientras el menú está abierto o
+     cerrándose: un clip-path permanente sobre toda la página deja de pintarse en móvil. */
+  html.menu-open main,
+  html.menu-closing main {
+    background: var(--bg);
+    clip-path: inset(
+      calc(var(--menu-oy, 50vh) - 50svh) 0 calc(100% - var(--menu-oy, 50vh) - 50svh) 0 round 18px
+    );
+  }
+  html.menu-open main {
+    transform: translateX(-64vw) scale(0.9);
+    filter: brightness(0.6) grayscale(0.4);
+  }
+}
+
+.mobile-menu {
+  background: var(--surface-solid);
+  border-left: 1px solid var(--line);
+  transform: translateX(100%);
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mobile-menu.is-open {
+  transform: translateX(0);
+}
+.mobile-menu .menu-item {
+  opacity: 0;
+  transform: translateX(24px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.2s ease;
+}
+.mobile-menu.is-open .menu-item {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main,
+  .mobile-menu,
+  .mobile-menu .menu-item {
+    transition: none !important;
   }
 }
 
