@@ -10,6 +10,7 @@ Todo el contenido vive en [`src/data/projects.ts`](../src/data/projects.ts).
 | Billing Sync | [billing-sync.vercel.app](https://billing-sync.vercel.app) | privado | live |
 | Nathaly | [web-nathaly.vercel.app](https://web-nathaly.vercel.app) | privado | live |
 | Grading App | [grading-app-bay.vercel.app](https://grading-app-bay.vercel.app) | [fabivc10/grading-app](https://github.com/fabivc10/grading-app) | live |
+| EV Charging Platform | [electric-vehicle-platform-test.vercel.app](https://electric-vehicle-platform-test.vercel.app) | [fabivc10/electric-vehicle-platform-test](https://github.com/fabivc10/electric-vehicle-platform-test) | live (solo frontend en Vercel) |
 | CertStudy (`test-app`) | [test-app-three-beta-31.vercel.app](https://test-app-three-beta-31.vercel.app) | [fabivc10/test-app](https://github.com/fabivc10/test-app) | live |
 
 La sección "Más en GitHub" se quitó (los repos no tenían descripción); queda un link al perfil en Contacto. Fiscal Bridge se quitó hasta tener contenido.

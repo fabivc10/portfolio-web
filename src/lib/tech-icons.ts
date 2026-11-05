@@ -13,9 +13,11 @@ import {
   siSupabase,
   siTailwindcss,
   siTauri,
+  siThreedotjs,
   siTypescript,
   siVite,
   siVitest,
+  siZod,
 } from "simple-icons";
 
 /** Ícono (path SVG 24×24 de Simple Icons) por nombre de tecnología, tal como va en `tags`. */
@@ -34,7 +36,9 @@ export const techIcons: Record<string, string> = {
   Supabase: siSupabase.path,
   "Tailwind CSS": siTailwindcss.path,
   Tauri: siTauri.path,
+  "three.js": siThreedotjs.path,
   TypeScript: siTypescript.path,
   Vite: siVite.path,
   Vitest: siVitest.path,
+  Zod: siZod.path,
 };

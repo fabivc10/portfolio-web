@@ -215,6 +215,27 @@ export const projects: Project[] = [
     images: [{ src: "/projects/grading-app.png", label: "Pantalla principal" }],
   },
   {
+    slug: "ev-charging-platform",
+    name: "EV Charging Platform",
+    summary:
+      "CSMS para cargadores de vehículos eléctricos: recibe estaciones por OCPP 1.6J, 2.0.1 y 2.1 o MQTT y muestra cada sesión en un dashboard en tiempo real, con un cargador emulado en el navegador para probarlo sin hardware.",
+    details: [
+      "Backend hexagonal: una estrategia por versión de OCPP sobre la misma conexión OCPP-J; el núcleo de negocio no conoce el protocolo.",
+      "Valida cada mensaje contra la especificación 1.6 (enumeraciones, tamaños CiString, dateTime) y responde el CALLERROR que corresponde.",
+      "Smart Charging: perfiles de carga apilados (SetChargingProfile, GetCompositeSchedule) que el emulador aplica en tiempo real.",
+      "El emulador sigue la spec: registro con BootNotification, máquina de estados del conector, cola de transacciones offline y MeterValues según su configuración.",
+    ],
+    tags: ["Node.js", "TypeScript", "Express", "WebSocket", "MQTT", "Zod", "React", "Zustand", "three.js", "Vite"],
+    kind: "Proyecto personal",
+    url: "https://electric-vehicle-platform-test.vercel.app",
+    repo: "https://github.com/fabivc10/electric-vehicle-platform-test",
+    images: [
+      { src: "/projects/ev-platform-session.png", label: "Sesión de carga en vivo" },
+      { src: "/projects/ev-platform-emulator.png", label: "Cargador emulado" },
+      { src: "/projects/ev-platform-profiles.png", label: "Perfiles de carga (Smart Charging)" },
+    ],
+  },
+  {
     slug: "certstudy",
     name: "CertStudy",
     summary:
